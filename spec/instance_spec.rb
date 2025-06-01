@@ -6,7 +6,9 @@ describe StripeMock::Instance do
   let(:stripe_helper) { StripeMock.create_test_helper }
 
   it_behaves_like_stripe do
-    def test_data_source(type); StripeMock.instance.send(type); end
+    def test_data_source(type)
+      StripeMock.instance.send(type)
+    end
   end
 
   before { StripeMock.start }
@@ -18,8 +20,13 @@ describe StripeMock::Instance do
       "type" => "service"
     )
     res, api_key = StripeMock.instance.mock_request('post', '/v1/products', api_key: 'api_key', params: symbol_params)
-    expect(res.data[:name]).to eq('Symbol Product')
-    expect(res.data[:type]).to eq('service')
+    if StripeMock::Compat.stripe_gte_13?
+      expect(JSON.parse(res.body)["name"]).to eq('Symbol Product')
+      expect(JSON.parse(res.body)["type"]).to eq('service')
+    else
+      expect(res.data[:name]).to eq('Symbol Product')
+      expect(res.data[:type]).to eq('service')
+    end
   end
 
   it "exits gracefully on an unrecognized handler url" do
